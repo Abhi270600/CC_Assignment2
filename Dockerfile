@@ -12,8 +12,6 @@ EXPOSE 5000
 # Define environment variable
 ENV NAME=Assignment2
 ENV FLASK_ENV=development
-ENV MONGO_HOST=mongo
-ENV MONGO_PORT=27017
 
-CMD ["python", "app.py"]
+CMD ["flask", "run", "--host=0.0.0.0"]
 

@@ -3,6 +3,12 @@ from pymongo import MongoClient # Database connector
 from bson.objectid import ObjectId # For ObjectId to work
 from bson.errors import InvalidId # For catching InvalidId exception for ObjectId
 import os
+from prometheus_client import start_http_server, Counter, Gauge, generate_latest, CONTENT_TYPE_LATEST
+
+# Initialize Prometheus metrics
+REQUEST_COUNT = Counter('flask_app_requests_total', 'Total number of requests received')
+REQUEST_LATENCY = Gauge('flask_app_request_latency_seconds', 'Latency of requests in seconds')
+ERROR_COUNT = Counter('flask_app_errors_total', 'Total number of errors occurred')
 
 mongodb_host = os.environ.get('MONGO_HOST', 'localhost')
 mongodb_port = int(os.environ.get('MONGO_PORT', '27017'))
@@ -14,6 +20,26 @@ app = Flask(__name__)
 title = "TODO with Flask"
 heading = "ToDo Reminder"
 #modify=ObjectId()
+
+# Expose metrics endpoint
+@app.route('/metrics')
+def metrics():
+    return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
+@app.route("/healthz")
+def health_check():
+    simulate_failure = os.getenv("SIMULATE_FAILURE", "false")
+    if simulate_failure == "true":
+        raise Exception("Simulated failure")
+    return "OK", 200
+
+@app.route("/readiness")
+def readiness_check():
+    try:
+        # Readiness probe: Check if MongoDB is available
+        client.admin.command('ping')
+        return "Ready", 200
+    except Exception as e:
+        return "Not Ready", 503
 
 def redirect_url():
 	return request.args.get('next') or \
